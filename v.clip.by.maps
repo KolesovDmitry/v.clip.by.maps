@@ -70,7 +70,6 @@ def main(options, flags):
         if line == in_map:
             continue
         names.append(line)
-    print names
     
     # Centroid of the first area
     p = grass.pipe_command('v.out.ascii', input=in_map, fs=' ')
@@ -81,10 +80,9 @@ def main(options, flags):
     # Cut the area
     tmp_clipped_map = 'area_tmp_%d' % os.getpid()
     tmp_overlay_map = 'over_tmp_%d' % os.getpid()
-    grass.run_command('g.copy', vect='%s,%s' % (in_map,out_map), overwrite=True)
+    grass.run_command('g.copy', vect='%s,%s' % (in_map,out_map), overwrite=True, quiet=True)
     try:
         for map in names:
-            print 'CLIP:', out_map, map
             grass.run_command(
                 './v.cliparea', 
                 input=map, cutter=out_map, output=tmp_clipped_map
@@ -110,10 +108,10 @@ def main(options, flags):
             )
             
             # Replace out_map by the cplipped map
-            grass.run_command('g.copy', vect='%s,%s' % (tmp_overlay_map, out_map), overwrite=True)
+            grass.run_command('g.copy', vect='%s,%s' % (tmp_overlay_map, out_map), overwrite=True, quiet=True)
     finally:
-        grass.run_command('g.remove', vect=tmp_clipped_map)
-        grass.run_command('g.remove', vect=tmp_overlay_map)
+        grass.run_command('g.remove', vect=tmp_clipped_map, quiet=True)
+        grass.run_command('g.remove', vect=tmp_overlay_map, quiet=True)
 
     # Copy attribute table
     p1 = grass.pipe_command('v.db.connect', map=in_map, flags='g')
