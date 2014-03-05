@@ -3,7 +3,7 @@
 #
 ############################################################################
 #
-# MODULE:      v.bymaps
+# MODULE:      v.clip.by.maps
 # AUTHOR(S):   Dmitry Kolesov (kolesov.dm@gmail.com);
 #
 # PURPOSE:     Cut from the input area parts that are "neighbours" of the
