@@ -62,7 +62,7 @@ def main(options, flags):
     in_map = options['input']
     prefix = options['prefix']
     out_map = options['output']
-    
+
     names = []
     p = grass.pipe_command('g.mlist', type='vect', pattern=prefix+'*')
     for line in p.stdout:
@@ -70,13 +70,13 @@ def main(options, flags):
         if line == in_map:
             continue
         names.append(line)
-    
+
     # Centroid of the first area
     p = grass.pipe_command('v.out.ascii', input=in_map, fs=' ')
     c = p.stdout.readline()
     p.wait()
     x1, y1 = [float(t) for t in c.split()[:2]]
-    
+
     # Cut the area
     tmp_clipped_map = 'area_tmp_%d' % os.getpid()
     tmp_overlay_map = 'over_tmp_%d' % os.getpid()
@@ -84,29 +84,29 @@ def main(options, flags):
     try:
         for map in names:
             grass.run_command(
-                './v.cliparea', 
+                './v.cliparea',
                 input=map, cutter=out_map, output=tmp_clipped_map
             )
-            grass.run_command('v.overlay', 
-                ainput=out_map, binput=tmp_clipped_map, output=tmp_overlay_map, operator='not', 
+            grass.run_command('v.overlay',
+                ainput=out_map, binput=tmp_clipped_map, output=tmp_overlay_map, operator='not',
                 flags='t',
                 overwrite=True, quiet=True
             )
-            
+
             # Move centroid to the old place
             # (new area has centroid in a different place, restore the previouse centroid position)
             p = grass.pipe_command('v.out.ascii', input=tmp_overlay_map, fs=' ')
             c = p.stdout.readline()
             p.wait()
-            
+
             x_new, y_new, cat = c.split()
             x_new, y_new = float(x_new), float(y_new)
             dx, dy = x1 - x_new, y1 - y_new
-            grass.run_command('v.edit', 
+            grass.run_command('v.edit',
                 map=tmp_overlay_map, tool='move', move='%s,%s' % (dx,dy), type='centroid', cat=cat,
                 quiet=True
             )
-            
+
             # Replace out_map by the cplipped map
             grass.run_command('g.copy', vect='%s,%s' % (tmp_overlay_map, out_map), overwrite=True, quiet=True)
     finally:
@@ -114,21 +114,10 @@ def main(options, flags):
         grass.run_command('g.remove', vect=tmp_overlay_map, quiet=True)
 
     # Copy attribute table
-    p1 = grass.pipe_command('v.db.connect', map=in_map, flags='g')
-    conn_info = p1.stdout.readline()
-    p1.wait()
-    layer, table, field, db, driver = conn_info.split()
-    grass.run_command(
-         'db.copy', 
-         from_driver=driver, to_driver=driver,
-         from_table=table, to_table=out_map,
-         from_database=db, to_database=db,
-         quiet=True
-    )
-    grass.run_command('v.db.connect', 
-        map=out_map, driver=driver, database=db, key=field, layer=1, table=out_map, 
-        quiet=True
-    )   
+    p = grass.pipe_command('v.category', input=in_map, option='print')
+    cat = p.stdout.readline().strip()
+    p.wait()
+    grass.run_command('./v.copyattr', input=in_map, output=out_map, cat=cat)
 
 
 if __name__ == "__main__":
